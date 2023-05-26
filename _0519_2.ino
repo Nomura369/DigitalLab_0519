@@ -65,7 +65,7 @@ byte scan[8][8] = {
   {0,0,0,0,0,0,0,1}
 };
 
-byte circle[8][8] = { //笑臉
+byte circle[8][8] = { //實際上改成了笑臉
   {1,1,0,0,0,0,1,1},
   {1,0,1,1,1,1,0,1},
   {0,1,0,1,1,0,1,0},
@@ -76,30 +76,22 @@ byte circle[8][8] = { //笑臉
   {1,1,0,0,0,0,1,1}
 };
 
-byte H[8][8] = {
-  {1,0,1,1,1,1,0,1},
-  {1,0,1,1,1,1,0,1},
-  {1,0,1,1,1,1,0,1},
-  {1,0,1,1,1,1,0,1},
-  {1,0,0,0,0,0,0,1},
-  {1,0,1,1,1,1,0,1},
-  {1,0,1,1,1,1,0,1},
-  {1,0,1,1,1,1,0,1}
-};
-
-byte A[8][8] = {
-  {1,0,0,0,0,0,0,1},
-  {1,0,1,1,1,1,0,1},
-  {1,0,1,1,1,1,0,1},
-  {1,0,1,1,1,1,0,1},
-  {1,0,0,0,0,0,0,1},
-  {1,0,1,1,1,1,0,1},
-  {1,0,1,1,1,1,0,1},
-  {1,0,1,1,1,1,0,1}
+byte H[8][8] = { //實際上改成了正方形的笑臉
+  {0,0,0,0,0,0,0,0},
+  {0,1,1,1,1,1,1,0},
+  {0,1,0,1,1,0,1,0},
+  {0,1,1,1,1,1,1,0},
+  {0,1,0,1,1,0,1,0},
+  {0,1,1,0,0,1,1,0},
+  {0,1,1,1,1,1,1,0},
+  {0,0,0,0,0,0,0,0}
 };
 
 byte previousState=1, presentState=1;
 byte patternNumber=0, melodyNumber=0;
+
+int thisNote = -1, noteDuration = 0;
+long previousTime = 0, presentTime = 0, pauseBetweenNotes = 0;
 
 void setup()
 {
@@ -109,63 +101,71 @@ void setup()
   for (byte i = 0; i <= sizeof(col); i++) {
     pinMode(col[i], OUTPUT);
   }  
-
+  
   pinMode(BUTTON, INPUT_PULLUP);
   Serial.begin(9600);
 }
 
+void checkToPlay(int num){
+if(num == 0){  
+  presentTime = millis();
+  if(presentTime - previousTime >= pauseBetweenNotes){
+    thisNote += 1;
+    if(thisNote >= 23){
+      thisNote = -1; 
+      pauseBetweenNotes = 1000;
+      previousTime = millis();
+    } else{
+      noteDuration = 1000 / noteDurations[thisNote];
+      tone(2, melody[thisNote], noteDuration);
+      pauseBetweenNotes = noteDuration * 1.2;
+      previousTime = millis();          
+    }  
+  }
+}
+if(num == 1){  
+  presentTime = millis();
+  if(presentTime - previousTime >= pauseBetweenNotes){
+    thisNote += 1;
+    if(thisNote >= 23){
+      thisNote = -1; 
+      pauseBetweenNotes = 1000;
+      previousTime = millis();
+    } else{
+      noteDuration = 1000 / noteDurations2[thisNote];
+      tone(2, melody2[thisNote], noteDuration);
+      pauseBetweenNotes = noteDuration * 1.2;
+      previousTime = millis();          
+    }  
+  }
+}
+}
+
+
 void loop()
 { 
-  if(melodyNumber == 0) {
-    for (int thisNote = 0; thisNote < 23; thisNote++) {
-      int noteDuration = 1000 / noteDurations[thisNote];
-      tone(8, melody[thisNote], noteDuration);
-
-      int pauseBetweenNotes = noteDuration * 1.30;
-      delay(pauseBetweenNotes);
-      noTone(8); // stop the tone playing:
-      
-      presentState = digitalRead(BUTTON);//讀取按鈕
-   
-      if(presentState == 0 && previousState == 1){
-        patternNumber++;
-        if(patternNumber > 2) patternNumber = 0;
-        melodyNumber = melodyNumber + 1;
-        thisNote = 23;
-      }
-      if(patternNumber == 0) showPattern(circle);
-      else if(patternNumber == 1) showPattern(H);
-      else if(patternNumber == 2)showPattern(A);
-      delay(2);  
-      
-      previousState = presentState;
-    }
-  }
-  if(melodyNumber == 1) {
-    for (int thisNote = 0; thisNote < 23; thisNote++) {
-      int noteDuration = 1000 / noteDurations2[thisNote];
-      tone(8, melody2[thisNote], noteDuration);
-
-      int pauseBetweenNotes = noteDuration * 1.30;
-      delay(pauseBetweenNotes);
-      noTone(8); // stop the tone playing:
-      presentState = digitalRead(BUTTON);//讀取按鈕
-      //圖形部分
-      if(presentState == 0 && previousState == 1){
-        patternNumber++;
-        if(patternNumber > 2) patternNumber = 0;
-        melodyNumber = melodyNumber + 1;
-        thisNote = 23;
-      }
-      if(patternNumber == 0) showPattern(circle);
-      else if(patternNumber == 1) showPattern(H);
-      else if(patternNumber == 2)showPattern(A);
-      delay(2);  
-      previousState = presentState;
-    }
+  presentState = digitalRead(BUTTON);//讀取按鈕
+  Serial.println(presentState);
+  if(presentState == 0 && previousState == 1){ //按下按鈕
+    patternNumber++;
+    melodyNumber++;
+    if(patternNumber > 1) patternNumber = 0;
+    if(melodyNumber > 1) melodyNumber = 0;
+    thisNote = 23;  
   }
   
+  if(patternNumber == 0) showPattern(circle);
+  else if(patternNumber == 1) showPattern(H);
+  
+  if(melodyNumber == 0) checkToPlay(0);
+  else if(melodyNumber == 1) checkToPlay(1);
+  
+  delay(2);  
+  previousState = presentState;
+  
+  //delay(50);
 }
+
 
 void showPattern(byte matrix[8][8]){
   for(byte i = 0; i < 8; i++){
@@ -178,5 +178,5 @@ void showPattern(byte matrix[8][8]){
       digitalWrite(col[j], HIGH);	
     }
   }
-  delay(2);
+  //delay(2);
 }
