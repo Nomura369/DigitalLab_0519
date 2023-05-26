@@ -68,6 +68,9 @@ byte circle[8][8] = { //實際上改成了笑臉
 
 //byte previousState=0, presentState=0, patternNumber=0;
 
+int thisNote = -1, noteDuration = 0;
+long previousTime = 0, presentTime = 0, pauseBetweenNotes = 0;
+
 void setup()
 {
   for (byte i = 0; i <= sizeof(row); i++) {
@@ -81,38 +84,31 @@ void setup()
   //Serial.begin(9600);
 }
 
+void checkToPlay(){
+  presentTime = millis();
+  if(presentTime - previousTime >= pauseBetweenNotes){
+    thisNote += 1;
+    if(thisNote >= 23){
+      thisNote = -1; 
+      pauseBetweenNotes = 1000;
+      previousTime = millis();
+    } else{
+      noteDuration = 1000 / noteDurations[thisNote];
+      tone(2, melody[thisNote], noteDuration);
+      pauseBetweenNotes = noteDuration * 1.2;
+      previousTime = millis();          
+    }  
+  }
+}
+
+
 void loop()
 { 
-  for (int thisNote = 0; thisNote < 23; thisNote++)
-    {
-      showPattern(circle);
-      int noteDuration = 1000 / noteDurations[thisNote];
-      showPattern(circle);
-      tone(2, melody[thisNote], noteDuration);
-      showPattern(circle);
-
-      int pauseBetweenNotes = noteDuration * 1.30;
-      showPattern(circle);
-      delay(pauseBetweenNotes);
-      showPattern(circle);
-      noTone(2);
-    }
-  
-    
-  /*presentState = digitalRead(BUTTON);
-  if(presentState == 1 && previousState == 0){
-    patternNumber++;
-    if(patternNumber > 2) patternNumber = 0;
-  }
-  Serial.println(patternNumber);  
-
-  if(patternNumber == 0) showPattern(circle);
-  else if(patternNumber == 1) showPattern(H);
-  else if(patternNumber == 2)showPattern(A);
-  delay(2);
-  previousState = presentState;*/
-  
+  showPattern(circle);
+  checkToPlay();
+  //delay(50);
 }
+
 
 void showPattern(byte matrix[8][8]){
   for(byte i = 0; i < 8; i++){
@@ -125,5 +121,5 @@ void showPattern(byte matrix[8][8]){
       digitalWrite(col[j], HIGH);	
     }
   }
-  delay(2);
+  //delay(2);
 }
